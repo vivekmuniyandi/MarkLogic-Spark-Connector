@@ -1,0 +1,25 @@
+apply plugin: 'scala'
+
+repositories {
+    mavenCentral()
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+    maven { url "http://repo.maven.apache.org/maven2" }
+}
+
+dependencies {
+    compile 'org.scala-lang:scala-library:2.11.6'
+    compile group: 'org.apache.spark', name: 'spark-core_2.11', version: '2.2.0'
+    compile group: 'org.apache.spark', name: 'spark-sql_2.11', version: '2.2.0'
+    compile group: 'org.apache.spark', name: 'spark-mllib_2.11', version: '2.2.0'
+    compile group: 'com.marklogic', name: 'marklogic-client-api', version: '4.0.3.1'
+    testCompile group: 'org.scalatest', name: 'scalatest_2.10', version: '3.2.0-SNAP10'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.5.1'
+}
