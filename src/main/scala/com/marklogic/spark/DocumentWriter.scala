@@ -5,8 +5,9 @@ import java.util.UUID
 
 import com.marklogic.client.io.{Format, StringHandle}
 import com.marklogic.client.{DatabaseClientFactory, DatabaseClient}
-import com.marklogic.datamovement._
-import org.apache.spark.{Logging, SparkConf, TaskContext}
+import com.marklogic.client.datamovement._
+import org.apache.spark.{ SparkConf, TaskContext}
+import org.apache.spark.internal.Logging
 
 /**
  * Created by hpuranik on 5/23/2016.
@@ -28,9 +29,9 @@ class DocumentWriter[T](@transient conf : SparkConf) extends Serializable with L
           mlPwd,
           DatabaseClientFactory.Authentication.valueOf("DIGEST"))
 
-        val moveMgr:DataMovementManager = DataMovementManager.newInstance().withClient(client)
+        val moveMgr:DataMovementManager = client.newDataMovementManager()
 
-        val batcher : WriteHostBatcher  = moveMgr.newWriteHostBatcher().
+        val batcher : WriteBatcher  = moveMgr.newWriteBatcher().
                                                   withJobName("RDBBatchDataMover").
                                                   onBatchSuccess(batchSuccessListener).
                                                   onBatchFailure(batchFailureListener)
@@ -44,19 +45,19 @@ class DocumentWriter[T](@transient conf : SparkConf) extends Serializable with L
           val id = UUID.randomUUID().toString
           batcher.add(id, new StringHandle(doc).withFormat(Format.JSON))
         }
-        batcher.flush()
+        batcher.awaitCompletion()
         moveMgr.stopJob(ticket)
   }
 
-  object batchSuccessListener extends BatchListener[WriteEvent]{
-
-    override def processEvent(databaseClient: DatabaseClient, batch: Batch[WriteEvent]) : Unit =
+  object batchSuccessListener extends WriteBatchListener{
+    override def processEvent( batch: WriteBatch) : Unit =
       logInfo(f"Sucessfully wrote " + batch.getItems().length)
   }
 
-  object batchFailureListener extends BatchFailureListener[WriteEvent]{
-    override def processEvent(databaseClient: DatabaseClient, batch: Batch[WriteEvent], throwable: Throwable): Unit =
-    logError("FAILURE on batch:" + batch.getJobTicket.getJobId + throwable.toString)
+  object batchFailureListener extends WriteFailureListener{
+    override def processFailure(batch: WriteBatch, failure: Throwable): Unit = {
+      logError("FAILURE on batch:" + batch.getJobTicket.getJobId + failure.toString)
+    }
   }
 
 }

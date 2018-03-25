@@ -1,6 +1,5 @@
 package com.marklogic.spark
 
-import com.marklogic.client.query.{StructuredQueryDefinition, StructuredQueryBuilder}
 import org.apache.spark.SparkContext
 import scala.language.implicitConversions
 

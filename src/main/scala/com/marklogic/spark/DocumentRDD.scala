@@ -3,16 +3,21 @@ package com.marklogic.spark
 import com.fasterxml.jackson.databind.JsonNode
 import com.marklogic.client.DatabaseClient
 import com.marklogic.client.DatabaseClientFactory
-import com.marklogic.client.document.{DocumentRecord, GenericDocumentManager, DocumentPage, DocumentManager}
+import com.marklogic.client.DatabaseClientFactory.DigestAuthContext
+import com.marklogic.client.datamovement.DataMovementManager
+import com.marklogic.client.document.{DocumentManager, DocumentPage, DocumentRecord, GenericDocumentManager}
 import com.marklogic.client.io.JacksonHandle
 import com.marklogic.client.io.marker.{AbstractReadHandle, AbstractWriteHandle}
-import com.marklogic.client.query.{StructuredQueryDefinition, StructuredQueryBuilder}
-import com.marklogic.datamovement._
+import com.marklogic.client.query.{StructuredQueryBuilder, StructuredQueryDefinition}
+import com.marklogic.client.datamovement._
+import com.marklogic.client.impl.GenericDocumentImpl
+import org.apache.spark.internal.Logging
+
 import scala.collection.JavaConversions._
 import scala.collection.{Set, mutable}
 import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{TaskContext, Logging, SparkContext, Partition}
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 class MarkLogicPartition(val id: Int,
                          val uris: Array[String],
@@ -58,13 +63,13 @@ class MarkLogicDocumentRDD(@transient sc: SparkContext) extends RDD[JsonNode](sc
 
     val secCtx: DatabaseClientFactory.SecurityContext = new DatabaseClientFactory.DigestAuthContext(mlUser, mlPwd)
     val client: DatabaseClient = DatabaseClientFactory.newClient(mlHost, mlPort, mlDatabaseName, secCtx)
-    val moveMgr:DataMovementManager = DataMovementManager.newInstance().withClient(client)
+    val moveMgr:DataMovementManager = client.newDataMovementManager()
     //construct a collection query based on the collection name provided.
     val query: StructuredQueryDefinition = new StructuredQueryBuilder().collection(mlCollectionName)
-    val uriBatcher : QueryHostBatcher = moveMgr.newQueryHostBatcher(query).
+    val uriBatcher : QueryBatcher = moveMgr.newQueryBatcher(query).
                                                   withConsistentSnapshot().
                                                   withJobName("RDD Creation").
-                                                  withBatchSize(20000).
+                                                  withBatchSize(100).
                                                   onUrisReady(new batchReady).
                                                   onQueryFailure(new queryFailed)
 
@@ -182,7 +187,7 @@ class MarkLogicDocumentRDD(@transient sc: SparkContext) extends RDD[JsonNode](sc
                   new DatabaseClientFactory.DigestAuthContext(part.userName, part.pwd)
     val client: DatabaseClient = DatabaseClientFactory.newClient(part.host, part.port, part.dbName, secCtx)
     val docMgr: GenericDocumentManager = client.newDocumentManager()
-    val page: DocumentPage = docMgr.read(part.timeStamp, part.uris:_*)
+    val page: DocumentPage = docMgr.asInstanceOf[GenericDocumentImpl].read(part.timeStamp, part.uris:_*)
 
     //val result: EvalResultIterator = client.newServerEval.xquery(query.toString).eval
     while (page.hasNext) {
@@ -195,18 +200,17 @@ class MarkLogicDocumentRDD(@transient sc: SparkContext) extends RDD[JsonNode](sc
     partitionDocuments.iterator
   }
 
-
-
   class ForestSplit {
     private[MarkLogicDocumentRDD] var forestId: BigInt = null
     private[MarkLogicDocumentRDD] var hostName: String = null
     private[MarkLogicDocumentRDD] var recordCount: Long = 0L
   }
 
-  class batchReady extends BatchListener[String] {
-    override def processEvent(databaseClient: DatabaseClient, batch: Batch[String]): Unit = {
+  class batchReady extends QueryBatchListener {
+    override def processEvent(batch: QueryBatch): Unit = {
+      val databaseClient: DatabaseClient = batch.getClient
       val idx: Int = batch.getJobBatchNumber.toInt
-      val host: String = batch.getForest.getHostName
+      val host: String = batch.getForest.getHost
       val forest: String = batch.getForest.getForestName
       var forestParts: mutable.HashMap[String, ArrayBuffer[MarkLogicPartition]] = partitionMap.getOrDefault(host, null)
       //println(partitionMap.getClass.getCanonicalName)
@@ -222,21 +226,22 @@ class MarkLogicDocumentRDD(@transient sc: SparkContext) extends RDD[JsonNode](sc
         forestParts.put(forest, parts)
       }
       val timestamp: Long = batch.getServerTimestamp
+      val securityContext = databaseClient.getSecurityContext.asInstanceOf[DigestAuthContext]
       parts.add(new MarkLogicPartition(idx,
                                         batch.getItems,
                                         host,
                                         forest,
                                         databaseClient.getPort,
                                         databaseClient.getDatabase,
-                                        databaseClient.getUser,
-                                        databaseClient.getPassword,
+                                        securityContext.getUser,
+                                        securityContext.getPassword,
                                         timestamp))
       logInfo(f"Sucessfully Added Partition" + batch.getJobBatchNumber)
     }
   }
 
-  class queryFailed extends FailureListener[QueryHostException] {
-    override def processFailure(databaseClient: DatabaseClient, e: QueryHostException): Unit = {
+  class queryFailed extends QueryFailureListener {
+    override def processFailure(e: QueryBatchException): Unit = {
       logInfo(e.printStackTrace().toString)
     }
   }

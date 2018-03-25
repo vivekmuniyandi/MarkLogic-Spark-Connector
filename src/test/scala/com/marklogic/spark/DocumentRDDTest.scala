@@ -1,7 +1,6 @@
 package com.marklogic.spark
 
 import com.fasterxml.jackson.databind.JsonNode
-import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.apache.spark.{SparkConf, Partition, SparkContext}
 import org.scalatest.FunSuite
 
@@ -12,12 +11,12 @@ import org.scalatest.FunSuite
 class DocumentRDDTest extends FunSuite {
 
   val sparkConf: SparkConf = new SparkConf().setAppName("com.marklogic.spark.DocumentRDDTest").setMaster("local")
-  sparkConf.set("MarkLogic_Host", "engrlab-129-226.engrlab.marklogic.com")
+  sparkConf.set("MarkLogic_Host", "localhost")
   sparkConf.set("MarkLogic_Port", "8000")
-  sparkConf.set("MarkLogic_Database", "VendorHub")
+  sparkConf.set("MarkLogic_Database", "Documents")
   sparkConf.set("MarkLogic_User", "admin")
   sparkConf.set("MarkLogic_Password", "admin")
-  sparkConf.set("MarkLogic_Collection", "NorthCarolina")
+  sparkConf.set("MarkLogic_Collection", "TestCollection")
   val sc: SparkContext = new SparkContext(sparkConf)
 
   test("testComputePartitions") {
