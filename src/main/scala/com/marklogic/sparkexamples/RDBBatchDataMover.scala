@@ -3,9 +3,7 @@ package com.marklogic.sparkexamples
 import com.marklogic.spark.addMarkLogicDataFrameFunctions
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{DataFrame, SQLContext}
-/**
- * Created by hpuranik on 5/23/2016.
- */
+
 class RDBBatchDataMover (sparkContext : SparkContext) {
 
   val sqlContext = new SQLContext(sparkContext)

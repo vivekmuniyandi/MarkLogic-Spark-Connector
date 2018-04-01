@@ -1,6 +1,7 @@
 package com.marklogic.sparkexamples
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.marklogic.client.query.StructuredQueryBuilder
 import com.marklogic.spark.{MarkLogicDocumentRDD, addMarkLogicSparkContextFunctions}
 import org.apache.spark.{Partition, SparkConf, SparkContext}
 import org.apache.spark.sql.{DataFrame, SQLContext}
@@ -11,7 +12,8 @@ import org.apache.spark.sql.{DataFrame, SQLContext}
 class MarkLogicSparkAnalytics (val sc : SparkContext) {
 
   def analyzeMarkLogicJSONData() {
-    val mlRDD: MarkLogicDocumentRDD = sc.newMarkLogicDocumentRDD()
+    val query = new StructuredQueryBuilder().collection("TestCollection")
+    val mlRDD: MarkLogicDocumentRDD = sc.newMarkLogicDocumentRDD(query.serialize())
     println("Done Loading MarkLogic RDD. Docs Loaded = " + mlRDD.count())
   }
 }

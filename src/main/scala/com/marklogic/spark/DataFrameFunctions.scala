@@ -5,9 +5,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{Row, DataFrame}
 import scala.language.implicitConversions
 
-/**
- * Created by hpuranik on 5/23/2016.
- */
 class DataFrameFunctions (@transient val df: DataFrame) extends Serializable {
 
   def saveDataFrameToMarkLogic(collectionName: String =""):  Unit = {

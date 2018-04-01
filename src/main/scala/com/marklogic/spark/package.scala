@@ -15,7 +15,7 @@ package object spark {
   implicit def addMarkLogicDataFrameFunctions(df: DataFrame): DataFrameFunctions =
     new DataFrameFunctions(df)
 
-  implicit def addMarkLogicSparkRDDFunctions(rdd: RDD[String]): RDDFunctions[String] =
+  implicit def addMarkLogicSparkRDDFunctions(rdd: MarkLogicDocumentRDD): RDDFunctions =
     new RDDFunctions(rdd)
 
 }
