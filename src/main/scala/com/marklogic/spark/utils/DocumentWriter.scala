@@ -1,15 +1,17 @@
-package com.marklogic.spark
+package com.marklogic.spark.utils
 
 import java.io.Serializable
-import java.util.UUID
 
-import com.marklogic.client.io.{DocumentMetadataHandle, Format, StringHandle}
-import com.marklogic.client.{DatabaseClient, DatabaseClientFactory}
+import com.fasterxml.jackson.databind.JsonNode
 import com.marklogic.client.datamovement._
 import com.marklogic.client.document.DocumentRecord
-import com.marklogic.client.io.marker.DocumentMetadataWriteHandle
-import org.apache.spark.{SparkConf, TaskContext}
+import com.marklogic.client.io.marker.AbstractWriteHandle
+import com.marklogic.client.io._
+import com.marklogic.client.{DatabaseClient, DatabaseClientFactory}
+import com.marklogic.spark.marklogic.SparkDocument
 import org.apache.spark.internal.Logging
+import org.apache.spark.{SparkConf, TaskContext}
+import org.w3c.dom.Document
 
 class DocumentWriter[T](@transient conf : SparkConf, collection :String,
                         directory : String) extends Serializable with Logging{
@@ -44,7 +46,7 @@ class DocumentWriter[T](@transient conf : SparkConf, collection :String,
         val ticket : JobTicket = moveMgr.startJob(batcher)
         var metadataHandle : DocumentMetadataHandle= null
         while(data.hasNext){
-          val docRecord = data.next().asInstanceOf[DocumentRecord]
+          val docRecord = data.next().asInstanceOf[SparkDocument]
           //val isPair : Boolean = rddVal.isInstanceOf
           val id = uriPrefix+docRecord.getUri
 
@@ -52,10 +54,12 @@ class DocumentWriter[T](@transient conf : SparkConf, collection :String,
           if(!collection.equals("")) {
             metadataHandle = new DocumentMetadataHandle()
             metadataHandle.getCollections.add(collection)
-            batcher.add(id, metadataHandle, docRecord.getContent(new StringHandle()))
+            batcher.add(id, metadataHandle, docRecord.getContentHandle())
           } else {
-            batcher.add(id, docRecord.getMetadata(new StringHandle()),
-              docRecord.getContent(new StringHandle().withFormat(docRecord.getFormat)))
+        //    batcher.add(id, docRecord.getMetadata(new StringHandle()),
+          //    docRecord.getContent(new StringHandle().withFormat(docRecord
+            //  .getFormat)))
+            batcher.add(id, docRecord.getContentHandle())
           }
           println(id)
         }

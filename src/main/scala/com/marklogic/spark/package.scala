@@ -1,8 +1,12 @@
 package com.marklogic
 
+import com.marklogic.spark.dataframe.DataFrameFunctions
+import com.marklogic.spark.marklogic.SparkDocument
+import com.marklogic.spark.rdd.{MarkLogicDocumentRDD, MarklogicRDDFunctions}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
+
 import scala.language.implicitConversions
 
 /**
@@ -15,7 +19,8 @@ package object spark {
   implicit def addMarkLogicDataFrameFunctions(df: DataFrame): DataFrameFunctions =
     new DataFrameFunctions(df)
 
-  implicit def addMarkLogicSparkRDDFunctions(rdd: MarkLogicDocumentRDD): RDDFunctions =
-    new RDDFunctions(rdd)
+  implicit def addMarkLogicSparkRDDFunctions(rdd: RDD[SparkDocument])
+  : MarklogicRDDFunctions =
+    new MarklogicRDDFunctions(rdd)
 
 }

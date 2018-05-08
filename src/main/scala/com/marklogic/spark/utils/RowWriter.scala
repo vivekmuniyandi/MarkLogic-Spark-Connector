@@ -1,14 +1,14 @@
-package com.marklogic.spark
+package com.marklogic.spark.utils
 
 import java.io.Serializable
 
-import com.marklogic.client.io.{Format, StringHandle}
-import com.marklogic.client.{DatabaseClientFactory, DatabaseClient}
 import com.marklogic.client.datamovement._
-import org.apache.spark.sql.types.{DataType, StructField}
-import org.apache.spark.{TaskContext, SparkConf}
-import org.apache.spark.sql.Row
+import com.marklogic.client.io.{Format, StringHandle}
+import com.marklogic.client.{DatabaseClient, DatabaseClientFactory}
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{DataType, StructField}
+import org.apache.spark.{SparkConf, TaskContext}
 
 /**
  * Created by hpuranik on 6/7/2016.

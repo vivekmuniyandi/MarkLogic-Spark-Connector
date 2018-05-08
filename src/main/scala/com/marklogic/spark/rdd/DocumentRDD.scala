@@ -1,22 +1,20 @@
-package com.marklogic.spark
+package com.marklogic.spark.rdd
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.marklogic.client.DatabaseClient
-import com.marklogic.client.DatabaseClientFactory
 import com.marklogic.client.DatabaseClientFactory.DigestAuthContext
-import com.marklogic.client.datamovement.DataMovementManager
+import com.marklogic.client.datamovement.{DataMovementManager, _}
 import com.marklogic.client.document.{DocumentPage, DocumentRecord, GenericDocumentManager}
-import com.marklogic.client.query.{QueryManager, RawCombinedQueryDefinition, StructuredQueryDefinition}
-import com.marklogic.client.datamovement._
 import com.marklogic.client.impl.GenericDocumentImpl
 import com.marklogic.client.io.Format
+import com.marklogic.client.query.QueryManager
+import com.marklogic.client.{DatabaseClient, DatabaseClientFactory}
+import com.marklogic.spark.marklogic.SparkDocument
 import org.apache.spark.internal.Logging
-
-import scala.collection.JavaConversions._
-import scala.collection.{Set, mutable}
-import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{Partition, SparkContext, TaskContext}
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.{Set, mutable}
 
 class MarkLogicPartition(val id: Int,
                          val uris: Array[String],
@@ -38,7 +36,7 @@ class MarkLogicPartition(val id: Int,
 }
 
 class MarkLogicDocumentRDD(@transient sc: SparkContext, query: String) extends
-  RDD[DocumentRecord](sc, Nil) with Logging {
+  RDD[SparkDocument](sc, Nil) with Logging {
 
   var partitionMap: mutable.HashMap[String, mutable.HashMap[String, ArrayBuffer[MarkLogicPartition]]] = null
 
@@ -150,11 +148,11 @@ class MarkLogicDocumentRDD(@transient sc: SparkContext, query: String) extends
     partitions.toArray
   }
 
-  override def compute(split: Partition, context: TaskContext): Iterator[DocumentRecord] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[SparkDocument] = {
 
     val part: MarkLogicPartition = split.asInstanceOf[MarkLogicPartition]
     // fetch data from server
-    val partitionDocuments: ArrayBuffer[DocumentRecord] = new ArrayBuffer[DocumentRecord]
+    val partitionDocuments: ArrayBuffer[SparkDocument] = new ArrayBuffer[SparkDocument]
     val secCtx: DatabaseClientFactory.SecurityContext =
       new DatabaseClientFactory.DigestAuthContext(part.userName, part.pwd)
     val client: DatabaseClient = DatabaseClientFactory.newClient(part.host, part.port, part.dbName, secCtx)
@@ -164,7 +162,7 @@ class MarkLogicDocumentRDD(@transient sc: SparkContext, query: String) extends
     //val result: EvalResultIterator = client.newServerEval.xquery(query.toString).eval
     while (page.hasNext) {
       val record: DocumentRecord = page.next()
-      partitionDocuments.add(record)
+      partitionDocuments.add(new SparkDocument(record))
     }
 
     partitionDocuments.iterator
@@ -217,3 +215,4 @@ class MarkLogicDocumentRDD(@transient sc: SparkContext, query: String) extends
   }
 }
 
+//class UriDocumentPairRDD

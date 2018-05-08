@@ -2,7 +2,8 @@ package com.marklogic.sparkexamples
 
 import com.fasterxml.jackson.databind.JsonNode
 import com.marklogic.client.query.StructuredQueryBuilder
-import com.marklogic.spark.{MarkLogicDocumentRDD, addMarkLogicSparkContextFunctions}
+import com.marklogic.spark.addMarkLogicSparkContextFunctions
+import com.marklogic.spark.rdd.MarkLogicDocumentRDD
 import org.apache.spark.{Partition, SparkConf, SparkContext}
 import org.apache.spark.sql.{DataFrame, SQLContext}
 

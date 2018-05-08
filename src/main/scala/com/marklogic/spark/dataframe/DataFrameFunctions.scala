@@ -1,8 +1,9 @@
-package com.marklogic.spark
+package com.marklogic.spark.dataframe
 
+import com.marklogic.spark.utils.RowWriter
 import org.apache.spark.rdd.RDD
-import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.{Row, DataFrame}
+import org.apache.spark.sql.{DataFrame, Row}
+
 import scala.language.implicitConversions
 
 class DataFrameFunctions (@transient val df: DataFrame) extends Serializable {

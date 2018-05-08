@@ -1,6 +1,6 @@
 package com.marklogic.spark
 
-import com.marklogic.client.query.StructuredQueryDefinition
+import com.marklogic.spark.rdd.MarkLogicDocumentRDD
 import org.apache.spark.SparkContext
 
 import scala.language.implicitConversions
